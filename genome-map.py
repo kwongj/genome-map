@@ -14,6 +14,7 @@ parser.add_argument('--mindepth', metavar='INT', default=0, type=int, help='set 
 parser.add_argument('--out', metavar='FILE', default='map.svg', help='save SVG output as specified file (default=map.svg)')
 parser.add_argument('--size', metavar='WIDExHIGH', default='800x600', help='specify width and height of SVG in pixels (default="800x600")')
 # parser.add_argument('--order', metavar='FILE', help='specify file containing list of genomes/chromosomes (1 per line) in desired order')
+parser.add_argument('--minlen', metavar='LEN', default=0, type=int, help='specify minimum length of segment in bp to display (default=0)')
 parser.add_argument('--colour', metavar='COLOUR', default='black', help='specify colour of recombination regions in HEX format (default=black)')
 parser.add_argument('--version', action='version', version='%(prog)s 0.1')
 
@@ -38,7 +39,7 @@ def err(*args, **kwargs):
 genomeLIST = []
 nocovCOUNT = {}
 covCOUNT = {}
-genomeLEN = set()
+genomeLEN = {}
 
 # Import depth counts into pandas dataframe
 df = pd.read_csv(args.depth, sep = '\t', names = ['chr', 'pos', 'cov'])
@@ -58,9 +59,9 @@ for genome in genomeDICT:
 	for k, g in groupby(enumerate(loci_list), lambda ix: ix[0] - ix[1]):
 		loci = list(map(itemgetter(1), g))
 		genomeLIST.append(tuple([genome, min(loci), max(loci)]))
-	genomeLEN.add(len(df_CHR))
+	genomeLEN[genome] = len(df_CHR)
 # Find maximum length of genome
-max_loci = max(genomeLEN)
+max_loci = max(genomeLEN.values())
 
 # Draw SVG
 svgsize = args.size.split('x',1)		# calibrate desired size of image
@@ -79,6 +80,9 @@ dwg = svgwrite.Drawing(args.out)
 
 def rect(x,p,w,colour):		# Draw regions
 	dwg.add(dwg.rect(insert=((x*s)+5, (p*h)+5), size=(w, h*0.5), fill=colour))
+
+def border(p,w):		# Box with 3px margin
+	dwg.add(dwg.rect(insert=(0+5, (p*h)+5), size=(w, h*0.5), stroke='black', fill='none'))
 
 def label(n,p):			# Sequence ID labels
 	dwg.add(dwg.text(n, insert=((max_loci*s)+15, (((p+1)*h)-(0.2*h))+5), fill=main_colour, style=font))
@@ -106,9 +110,14 @@ for seg in genomeLIST:
 	x = int(seg[1])		# locus start
 	y = int(seg[2])		# locus stop
 	w = (y-x)*s			# calculate width of bars
-	if w < 1:			# set minimum width to 1 pixel for each segment
-		w = 0
-	rect(x,p,w,colour)
+	# Set minimum segment length in bp
+	if (y-x) > args.minlen:
+		rect(x,p,w,colour)
+
+# Draw a border for each chromosome
+for chr in genomeDICT:
+	p = [*genomeDICT].index(chr)
+	border(p,genomeLEN[chr]*s)
 	label(chr + ': ' + covCOUNT[chr][3],p)			# labels
 
 # Draw bounding box
