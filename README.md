@@ -30,7 +30,7 @@ optional arguments:
 ```
 
 **Requires:**
-* Depth file from samtools depth with all sites reported (-aa)
+* Depth file from samtools depth with all sites reported (`-aa`)
 
 **Options:**
 * Specify output file using `--out OUTFILE`
