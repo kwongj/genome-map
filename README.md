@@ -29,6 +29,9 @@ optional arguments:
   --version            show program's version number and exit
 ```
 
+<p><img src="https://user-images.githubusercontent.com/7855976/84766847-ce961c00-b014-11ea-96a9-73b34a59be46.png"></p>
+
+
 **Requires:**
 * Depth file from samtools depth with all sites reported (`-aa`)
 
